@@ -5,7 +5,6 @@
 *	
 *	purpose:	https://github.com/gggg826/UnityEditorExpand
 *********************************************************************/
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
@@ -43,13 +42,14 @@ public class SceneViewExpand
 
         int length = EditorPrefs.GetInt(m_RegKey_RecordCount, 0);
 
-        if (length < 1)
+        if (length < 1 && !string.IsNullOrEmpty(m_LastScene))
         {
             m_RecordScenes = new string[] { m_LastScene };
         }
         else
         {
-            for (int i = 0; i < length; ++i)
+			m_RecordScenes = new string[length];
+			for (int i = 0; i < length; ++i)
             {
                 m_RecordScenes[i] = WWW.UnEscapeURL(EditorPrefs.GetString(m_RegKey_RecordPrefix + i, string.Empty));
             }
@@ -63,10 +63,10 @@ public class SceneViewExpand
 
     public void OnHierarchyWindowChanged()
     {
-        if (m_LastScene != EditorSceneManager.GetActiveScene().path)
+        if (m_LastScene != SceneManager.GetActiveScene().path)
         {
-            m_LastScene = EditorApplication.currentScene;
-            UpdateRecordScenes(EditorApplication.currentScene);
+            m_LastScene = SceneManager.GetActiveScene().path;
+            UpdateRecordScenes(SceneManager.GetActiveScene().path);
         }
     }
 
@@ -122,6 +122,7 @@ public class SceneViewExpand
         for (int i = 0; i < m_RecordScenes.Length; ++i)
         {
             EditorPrefs.SetString(m_RegKey_RecordPrefix + i, WWW.EscapeURL(m_RecordScenes[i]));
+			Debug.Log(string.Format("{0} : {1}", m_RegKey_RecordPrefix + i, m_RecordScenes[i]));
         }
     }
     

@@ -1,8 +1,11 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿/********************************************************************
+*	created:	28/7/2017   1:03
+*	filename: 	SceneViewExpand
+*	author:		Bing Lau
+*	
+*	purpose:	https://github.com/gggg826/UnityEditorExpand
+*********************************************************************/
 using UnityEditor;
-using UnityEditor.SceneManagement;
-using UnityEngine;
 
 [InitializeOnLoad]
 public class EditorViewManager
