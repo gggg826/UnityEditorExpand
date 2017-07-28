@@ -24,7 +24,7 @@ public class SceneViewExpand
             return m_Instance;
         }
     }
-    public int MaxRecordScenesLength;
+    public int MaxRecordScenesLength = 5;
 
     private List<EditorViewItem> m_SceneExpandItems;
     private GUIContent[] SceneDisplayOptions;
@@ -32,42 +32,35 @@ public class SceneViewExpand
     private string m_RegKey_RecordCount;
     private string m_RegKey_RecordPrefix;
     private string m_LastScene;
+	private bool m_Started;
     public SceneViewExpand()
     {
         string projectName = Path.GetFileNameWithoutExtension(System.Environment.CurrentDirectory);
-        Debug.Log(projectName);
         m_RegKey_RecordCount = projectName + "_Scenes_Count";
         m_RegKey_RecordPrefix = projectName + "_ScenesRecord_";
         m_LastScene = SceneManager.GetActiveScene().path;
+		m_Started = false;
 
-        int length = EditorPrefs.GetInt(m_RegKey_RecordCount, 0);
-
-        if (length < 1 && !string.IsNullOrEmpty(m_LastScene))
-        {
-            m_RecordScenes = new string[] { m_LastScene };
-        }
-        else
-        {
-			m_RecordScenes = new string[length];
-			for (int i = 0; i < length; ++i)
-            {
-                m_RecordScenes[i] = WWW.UnEscapeURL(EditorPrefs.GetString(m_RegKey_RecordPrefix + i, string.Empty));
-            }
-        }
-       
-        UpdateRecordScenes(m_LastScene);
-
-        m_SceneExpandItems = new List<EditorViewItem>();
+		int length = EditorPrefs.GetInt(m_RegKey_RecordCount, 0);
+		m_RecordScenes = new string[length];
+		for (int i = 0; i < length; ++i)
+		{
+			m_RecordScenes[i] = WWW.UnEscapeURL(EditorPrefs.GetString(m_RegKey_RecordPrefix + i, string.Empty));
+		}
+		UpdateSceneDisplayOptions();
+		m_SceneExpandItems = new List<EditorViewItem>();
         ViewExpandUtils.AddCustom(ref m_SceneExpandItems, AddRecentButton);
     }
 
     public void OnHierarchyWindowChanged()
     {
-        if (m_LastScene != SceneManager.GetActiveScene().path)
+        if (m_LastScene != SceneManager.GetActiveScene().path || !m_Started)
         {
+			m_Started = true;
             m_LastScene = SceneManager.GetActiveScene().path;
             UpdateRecordScenes(SceneManager.GetActiveScene().path);
-        }
+			SaveConfig();
+		}
     }
 
     public void OnSceneFunc(SceneView sceneView)
@@ -98,7 +91,7 @@ public class SceneViewExpand
         }
     }
     
-    void UpdateRecordScenes(string scenePath)
+    private void UpdateRecordScenes(string scenePath)
     {
         List<string> recordScenes = new List<string>(m_RecordScenes);
         if (File.Exists(scenePath) && !string.IsNullOrEmpty(scenePath))
@@ -111,21 +104,28 @@ public class SceneViewExpand
         }
 
         m_RecordScenes = recordScenes.ToArray();
+		UpdateSceneDisplayOptions();
 
-        SceneDisplayOptions = new GUIContent[m_RecordScenes.Length];
-        for (int i = 0; i < m_RecordScenes.Length; ++i)
-        {
-            SceneDisplayOptions[i] = new GUIContent(i + " " + Path.GetFileNameWithoutExtension(m_RecordScenes[i]));
-        }
+	}
 
-        EditorPrefs.SetInt(m_RegKey_RecordCount, m_RecordScenes.Length);
-        for (int i = 0; i < m_RecordScenes.Length; ++i)
-        {
-            EditorPrefs.SetString(m_RegKey_RecordPrefix + i, WWW.EscapeURL(m_RecordScenes[i]));
-			Debug.Log(string.Format("{0} : {1}", m_RegKey_RecordPrefix + i, m_RecordScenes[i]));
-        }
-    }
+	private void UpdateSceneDisplayOptions()
+	{
+		SceneDisplayOptions = new GUIContent[m_RecordScenes.Length];
+		for (int i = 0; i < m_RecordScenes.Length; ++i)
+		{
+			SceneDisplayOptions[i] = new GUIContent(i + " " + Path.GetFileNameWithoutExtension(m_RecordScenes[i]));
+		}
+	}
     
+	private void SaveConfig()
+	{
+		EditorPrefs.SetInt(m_RegKey_RecordCount, m_RecordScenes.Length);
+		for (int i = 0; i < m_RecordScenes.Length; ++i)
+		{
+			EditorPrefs.SetString(m_RegKey_RecordPrefix + i, WWW.EscapeURL(m_RecordScenes[i]));
+		}
+	}
+
     private void AddRecentButton()
     {
         GUIContent contentRecent = new GUIContent("Recent");
