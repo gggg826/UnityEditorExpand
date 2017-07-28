@@ -89,7 +89,12 @@ public class EditorSVNHelper : Editor
             {
                 string path = Path.GetFullPath(AssetDatabase.GUIDToAssetPath(selectedGUIDs[GUIDIndex]));
                 if (!string.IsNullOrEmpty(path))
+                {
                     list.Add(path);
+                    // 加入对应meta文件检测 [7/29/2017 BingLau]
+                    list.Add(path + ".meta");
+                }
+
             }
             targetPath = string.Join("*", list.ToArray());
         } 
