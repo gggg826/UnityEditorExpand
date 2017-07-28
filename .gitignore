@@ -226,5 +226,6 @@ Src/ShaderlabVS/Shaderlab.lex
 
 .vs/
 [Ll]ibrary
+[Tt]emp
 *.csproj
 *.sln
