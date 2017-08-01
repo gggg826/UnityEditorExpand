@@ -190,15 +190,22 @@ public class SceneViewExpand
 										  //Debug.Log((1 << LayerMask.NameToLayer("UI")) | (1 << LayerMask.NameToLayer("Default")));
 										  //下面这个层不存在的话会返回Int的最小值-2147483648
 										  //Debug.Log((1 << LayerMask.NameToLayer("NGUI")));
+										  SceneView view = SceneView.currentDrawingSceneView;
 										  if (toggled)
 										  {
 											  m_PlayerLayer = EditorPrefs.GetInt("VisibleLayers");
 											  //需要根据工程Layer设定更改要打开的层级名
 											  Tools.visibleLayers = 1 << LayerMask.NameToLayer("UI");
+											  view.in2DMode = true;
+											  Transform target = GameObject.Find("Canvas").transform;
+											  view.LookAt(target.position);
+											  view.size = 500;
 										  }
 										  else
 										  {
 											  Tools.visibleLayers = m_PlayerLayer;
+											  view.in2DMode = false;
+											  view.size = 1;
 										  }
 									  }
 									  , GUILayout.Width(60));
