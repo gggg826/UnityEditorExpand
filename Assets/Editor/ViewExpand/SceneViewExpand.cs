@@ -27,12 +27,15 @@ public class SceneViewExpand
 	public int MaxRecordScenesLength = 5;
 
 	private List<EditorViewItem> m_SceneExpandItems;
+
 	private GUIContent[] SceneDisplayOptions;
 	private string[] m_RecordScenes;
 	private string m_RegKey_RecordCount;
 	private string m_RegKey_RecordPrefix;
 	private string m_LastScene;
 	private bool m_Started;
+	private int m_PlayerLayer;
+
 	public SceneViewExpand()
 	{
 		string projectName = Path.GetFileNameWithoutExtension(System.Environment.CurrentDirectory);
@@ -49,10 +52,12 @@ public class SceneViewExpand
 		}
 		UpdateSceneDisplayOptions();
 		m_SceneExpandItems = new List<EditorViewItem>();
+		
 		AddRecentButton();
 		AddSpace();
-		AddStartGameButton();
+		AddUIEditorButton();
 		AddSpace();
+		AddStartGameButton();
 	}
 
 	public void OnHierarchyWindowChanged()
@@ -134,10 +139,12 @@ public class SceneViewExpand
 	/// </summary>
 	private void AddRecentButton()
 	{
+		string title = "Recent";
+		string tooltip = "快速切换历史Scene\r\n至多可储存5个历史Scene";
 		ViewExpandUtils.AddCustom(ref m_SceneExpandItems
 								 , () =>
 								 {
-									 GUIContent contentRecent = new GUIContent("Recent");
+									 GUIContent contentRecent = new GUIContent(title, tooltip);
 									 GUIStyle styleRecent = EditorStyles.toolbarDropDown;
 									 Rect rect = GUILayoutUtility.GetRect(contentRecent, styleRecent, GUILayout.Width(60));
 									 if (GUI.Button(rect, contentRecent, styleRecent))
@@ -152,10 +159,10 @@ public class SceneViewExpand
 	/// </summary>
 	private void AddStartGameButton()
 	{
-		string buttonName = "StartGame";
-		string tooltip = "不管你现在在编辑哪个Scene，只要点击这个按钮就可以直接从Login运行游戏";
+		string title = "StartGame";
+		string tooltip = "快速启动游戏\r\n无论你现在在编辑哪个Scene";
 		ViewExpandUtils.AddPushButton(ref m_SceneExpandItems
-									, buttonName
+									, title
 									, tooltip
 									, () =>
 									{
@@ -171,7 +178,30 @@ public class SceneViewExpand
 
 	private void AddUIEditorButton()
 	{
-
+		string title = "UI Layer";
+		string tooltip = "只显示UI Layer\r\n便于编辑UI";
+		ViewExpandUtils.AddToggleButton(ref m_SceneExpandItems
+									  , title
+									  , tooltip
+									  , (toggled) =>
+									  {
+										  //Debug.Log(Tools.visibleLayers);
+										  //Tools.visibleLayers值的计算方式
+										  //Debug.Log((1 << LayerMask.NameToLayer("UI")) | (1 << LayerMask.NameToLayer("Default")));
+										  //下面这个层不存在的话会返回Int的最小值-2147483648
+										  //Debug.Log((1 << LayerMask.NameToLayer("NGUI")));
+										  if (toggled)
+										  {
+											  m_PlayerLayer = EditorPrefs.GetInt("VisibleLayers");
+											  //需要根据工程Layer设定更改要打开的层级名
+											  Tools.visibleLayers = 1 << LayerMask.NameToLayer("UI");
+										  }
+										  else
+										  {
+											  Tools.visibleLayers = m_PlayerLayer;
+										  }
+									  }
+									  , GUILayout.Width(60));
 	}
 
 	private void AddSpace()

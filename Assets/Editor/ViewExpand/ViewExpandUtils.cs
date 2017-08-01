@@ -62,12 +62,22 @@ public class ViewExpandUtils
         item.LayoutOptions = options;
     }
 
-    /// <summary>
-    /// 添加自定义区域
-    /// </summary>
-    /// <param name="list"></param>
-    /// <param name="onClickEvent"></param>
-    public static void AddCustom(ref List<EditorViewItem> list, System.Action onDrow)
+	public static void AddToggleButton(ref List<EditorViewItem> list, string text, string tooltip, System.Action<bool> onToggleChanged, params GUILayoutOption[] options)
+	{
+		EditorViewItem item = new EditorViewItem();
+		list.Add(item);
+		item.ItemType = EditorViewItem.Type.ToggleButton;
+		item.Content = new GUIContent(text, tooltip);
+		item.OnToggleChanged = onToggleChanged;
+		item.LayoutOptions = options;
+	}
+
+	/// <summary>
+	/// 添加自定义区域
+	/// </summary>
+	/// <param name="list"></param>
+	/// <param name="onClickEvent"></param>
+	public static void AddCustom(ref List<EditorViewItem> list, System.Action onDrow)
     {
         EditorViewItem item = new EditorViewItem();
         list.Add(item);
@@ -81,17 +91,20 @@ public class EditorViewItem
     public enum Type
     {
         PushButton,
+		ToggleButton,
         Space,
         FlexibleSpace,
         Custom,
     }
 
     public float BlockValue;
+	public bool Toggled;
     public Type ItemType;
     public GUILayoutOption[] LayoutOptions;
     public GUIContent Content;
     public System.Action OnButtonClick;
     public System.Action OnCustomDraw;
+	public System.Action<bool> OnToggleChanged;
 
     public void Draw()
     {
@@ -101,6 +114,16 @@ public class EditorViewItem
                 if (GUILayout.Button(Content, EditorStyles.toolbarButton, LayoutOptions))
                     OnButtonClick();
                 break;
+			case Type.ToggleButton:
+				GUIStyle normalStyle = EditorStyles.toolbarButton;
+				GUIStyle toggledStyle = new GUIStyle(normalStyle);
+				toggledStyle.normal.background = toggledStyle.onActive.background;
+				if (GUILayout.Button(Content, Toggled ? toggledStyle : normalStyle, LayoutOptions))
+				{
+					Toggled = !Toggled;
+					OnToggleChanged(Toggled);
+				}
+				break; 
             case Type.Space:
                 if (BlockValue > 0)
                     GUILayout.Space(BlockValue);
