@@ -1,4 +1,12 @@
-﻿using UnityEditor;
+﻿/********************************************************************
+*	created:	18/8/2017   22:56
+*	filename: 	EditorGUITagLayerField
+*	author:		Bing Lau
+*	
+*	purpose:	https://github.com/gggg826/UnityEditorExpand
+*********************************************************************/
+
+using UnityEditor;
 using UnityEngine;
 
 public class EditorGUITagLayerField : EditorWindow
