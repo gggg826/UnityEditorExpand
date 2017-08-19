@@ -14,34 +14,38 @@ public class UIModifier : EditorWindow
 	private static EditorWindow m_UIModifier;
 	private static bool m_ButtonSpriteSelected;
 	private static UIWidget WidgetContents = new UIWidget();
+	private int m_H_Select_Pivot = 1;
+	private int m_V_Select_Pivot = 1;
 
-    [MenuItem("Window/UIModifier/Label &l")]
-    private static void ShowWindowSelectLabel()
-    {
+	//默认字体
+	UIFont toFont = null;
+	//切换到的字体
+	static UIFont toChangeFont;
+	static Color color = new Color(225 / 255f, 237 / 255f, 161 / 255f); //ffeda1;
+	static Color effecfColor = Color.gray;
+	static UILabel.Effect effect = UILabel.Effect.None;
+	static UILabel.Overflow ov = UILabel.Overflow.ResizeFreely;
+	static string SPName = "";
+
+
+	[MenuItem("Window/UIModifier/Label &l")]
+	private static void ShowWindowSelectLabel()
+	{
 		m_ButtonSpriteSelected = false;
 		if (!m_UIModifier)
-			m_UIModifier = GetWindow<UIModifier>(true, "UI图文批量修改工具");
+			m_UIModifier = GetWindow(typeof(UIModifier));
+		//m_UIModifier.titleContent = EditorGUIUtility.IconContent("lightMeter/greenLight");
 		m_UIModifier.Show();
-    }
+	}
 
 	[MenuItem("Window/UIModifier/Sprite &s")]
 	private static void ShowWindowSelectSprite()
 	{
 		m_ButtonSpriteSelected = true;
 		if (!m_UIModifier)
-			m_UIModifier = GetWindow<UIModifier>(true, "UI图文批量修改工具");
+			m_UIModifier = GetWindow(typeof(UIModifier));
 		m_UIModifier.Show();
 	}
-
-	//默认字体
-	UIFont toFont = null;
-    //切换到的字体
-    static UIFont toChangeFont;
-    static Color color = new Color(225 / 255f, 237 / 255f, 161 / 255f); //ffeda1;
-    static Color effecfColor = Color.gray;
-    static UILabel.Effect effect = UILabel.Effect.None;
-    static UILabel.Overflow ov = UILabel.Overflow.ResizeFreely;
-    static string SPName = "";
 
 	private void OnGUI()
 	{
@@ -101,72 +105,122 @@ public class UIModifier : EditorWindow
 		if (NGUIEditorTools.DrawHeader("Widget"))
 		{
 			NGUIEditorTools.BeginContents();
+			#region Pivot
+			//DrawPivot(); 采用新算法 [8/20/2017 BingLau]
+			GUILayout.Space(10);
+			int newPivotH = m_H_Select_Pivot, newPivotV = m_V_Select_Pivot;
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Pivot", GUILayout.Width(66f));
+			if (GUILayout.Toggle(newPivotH == 0, "\u25C4", "ButtonLeft"))
+				newPivotH = 0;
+			if (GUILayout.Toggle(newPivotH == 1, "\u25AC", "ButtonMid"))
+				newPivotH = 1;
+			if (GUILayout.Toggle(newPivotH == 2, "\u25BA", "ButtonRight"))
+				newPivotH = 2;
+			if (GUILayout.Toggle(newPivotV == 0, "\u25B2", "ButtonLeft"))
+				newPivotV = 0;
+			if (GUILayout.Toggle(newPivotV == 1, "\u258C", "ButtonMid"))
+				newPivotV = 1;
+			if (GUILayout.Toggle(newPivotV == 2, "\u25BC", "ButtonRight"))
+				newPivotV = 2;
+			GUILayout.EndHorizontal();
 
-			if (NGUISettings.minimalisticLook)
-				NGUIEditorTools.SetLabelWidth(70f);
+			if (m_H_Select_Pivot != newPivotH)
+			{
+				m_H_Select_Pivot = newPivotH;
+			}
+			if (m_V_Select_Pivot != newPivotV)
+			{
+				m_V_Select_Pivot = newPivotV;
+			}
 
-			DrawPivot();
-			DrawDepth();
-			DrawDimensions();
-			if (NGUISettings.minimalisticLook) NGUIEditorTools.SetLabelWidth(70f);
+			if (GUILayout.Button("Change Pivot"))
+			{
+				UIWidget.Pivot pivot = (UIWidget.Pivot)(3 * m_V_Select_Pivot + m_H_Select_Pivot);
+				Debug.Log(pivot.ToString());
+				WidgetContents.pivot = pivot;
+			}
+			#endregion
+			#region DrawDepth
+			//DrawDepth();
+			GUILayout.Space(10f);
+			GUILayout.BeginHorizontal();
+			GUILayout.Label("Depth", GUILayout.Width(66f));
+			if (GUILayout.Button("Back", GUILayout.MinWidth(46f)))
+			{
+				depth -= 1;
+			}
 
-			//SerializedProperty ratio = so.FindProperty("aspectRatio");
-			//SerializedProperty aspect = so.FindProperty("keepAspectRatio");
+			GUILayout.Space(5);
+			int newDepth = EditorGUILayout.IntField("", depth, GUILayout.MinWidth(50));
+			if (newDepth != depth)
+			{
+				depth = newDepth;
+			}
+			GUILayout.Space(5);
 
-			//GUILayout.BeginHorizontal();
-			//{
-			//	if (!aspect.hasMultipleDifferentValues && aspect.intValue == 0)
-			//	{
-			//		EditorGUI.BeginDisabledGroup(true);
-			//		NGUIEditorTools.DrawProperty("Aspect", ratio, false, GUILayout.Width(130f));
-			//		EditorGUI.EndDisabledGroup();
-			//	}
-			//	else NGUIEditorTools.DrawProperty("Aspect", ratio, false, GUILayout.Width(130f));
-
-			//	NGUIEditorTools.DrawProperty("", aspect, false, GUILayout.MinWidth(20f));
-			//}
-			//GUILayout.EndHorizontal();
+			if (GUILayout.Button("Forward", GUILayout.MinWidth(60f)))
+			{
+				depth += 1;
+			}
+			GUILayout.EndHorizontal();
+			if (GUILayout.Button("Change Depth"))
+			{
+				Debug.Log("Current Depth: " + depth);
+			}
+			#endregion
+			#region DrawDimensions
+			//DrawDimensions();
+			GUILayout.Space(10f);
+			GUILayout.BeginHorizontal();
+			EditorGUIUtility.labelWidth = 70;
+			int newBoundX = EditorGUILayout.IntField("Size", with, GUILayout.MinWidth(30f));
+			EditorGUIUtility.labelWidth = 12;
+			int newBoundY = EditorGUILayout.IntField("x", height, GUILayout.MinWidth(30f));
+			EditorGUIUtility.labelWidth = 70;
+			if (GUILayout.Button("Snap", GUILayout.Width(60f)))
+			{
+				Debug.LogError("UNDONE: Change this button to toggle");
+			}
+			GUILayout.EndHorizontal();
+			if (GUILayout.Button("Change Dimensions"))
+			{
+				Debug.LogError("UNDONE: Change this button to toggle");
+			}
+			#endregion
 			NGUIEditorTools.EndContents();
 
 		}
 	}
 
+	private int with = 100;
+	private int height = 100;
 	private void DrawDimensions()
 	{
-
-	}
-
-	private void DrawDepth()
-	{
-
-		GUILayout.Space(2f);
 		GUILayout.BeginHorizontal();
+		EditorGUIUtility.labelWidth = 70;
+		int w = EditorGUILayout.IntField("Size", with, GUILayout.MinWidth(30f));
+		EditorGUIUtility.labelWidth = 12;
+		int h = EditorGUILayout.IntField("x", height, GUILayout.MinWidth(30f));
+		EditorGUIUtility.labelWidth = 70;
+		if (GUILayout.Button("Snap", GUILayout.Width(60f)))
 		{
-			EditorGUILayout.PrefixLabel("Depth");
 
-			if (GUILayout.Button("Back", GUILayout.MinWidth(46f)))
-			{
-				//foreach (GameObject go in Selection.gameObjects)
-				//{
-				//	UIWidget pw = go.GetComponent<UIWidget>();
-				//	if (pw != null) pw.depth = w.depth - 1;
-				//}
-			}
-
-			//NGUIEditorTools.DrawProperty("", so, "mDepth", GUILayout.MinWidth(20f));
-
-			if (GUILayout.Button("Forward", GUILayout.MinWidth(60f)))
-			{
-				//foreach (GameObject go in Selection.gameObjects)
-				//{
-				//	//UIWidget pw = go.GetComponent<UIWidget>();
-				//	//if (pw != null) pw.depth = w.depth + 1;
-				//}
-			}
 		}
 		GUILayout.EndHorizontal();
 	}
 
+	private static int depth = 0;
+	private void DrawDepth()
+	{
+
+		
+	}
+
+
+	#region 旧的算法，采用移位，比较麻烦   [8/20/2017 BingLau]
+	private short h = 146;// 0000000010010010
+	private short v = 56;// 0000000000001110
 	private bool l = false;
 	private bool hc = true;
 	private bool r = false;
@@ -175,178 +229,200 @@ public class UIModifier : EditorWindow
 	private bool b = false;
 	private void DrawPivot()
 	{
-		short h = 73;// 0000000001001001
-		short v = 7;// 0000000000000111
+		int h = m_H_Select_Pivot, v = m_V_Select_Pivot;
 		GUILayout.BeginHorizontal();
 		GUILayout.Label("Pivot", GUILayout.Width(NGUISettings.minimalisticLook ? 66f : 76f));
-		Toggle(ref l, "\u25C4", "ButtonLeft", UIWidget.Pivot.Left, h, 0);
-		Toggle(ref hc, "\u25AC", "ButtonMid", UIWidget.Pivot.Center, h, 1);
-		Toggle(ref r, "\u25BA", "ButtonRight", UIWidget.Pivot.Right, h, 2);
-		Toggle(ref t, "\u25B2", "ButtonLeft", UIWidget.Pivot.Top, v, 0);
-		Toggle(ref vc, "\u258C", "ButtonMid", UIWidget.Pivot.Center, v, 3);
-		Toggle(ref b, "\u25BC", "ButtonRight", UIWidget.Pivot.Bottom, v, 6);
-
+		Toggle(ref l, true, "\u25C4", "ButtonLeft", 0);       //UIWidget.Pivot.Left,
+		Toggle(ref hc, true, "\u25AC", "ButtonMid", 1);   //UIWidget.Pivot.Center,
+		Toggle(ref r, true, "\u25BA", "ButtonRight", 2);      //UIWidget.Pivot.Right,
+		Toggle(ref t, false, "\u25B2", "ButtonLeft", 0);          //UIWidget.Pivot.Top,
+		Toggle(ref vc, false, "\u258C", "ButtonMid", 3);     //UIWidget.Pivot.Center,
+		Toggle(ref b, false, "\u25BC", "ButtonRight", 6);     //UIWidget.Pivot.Bottom,
 		GUILayout.EndHorizontal();
-	}
 
-	private void Toggle(ref bool bToggle, string text, string style, UIWidget.Pivot pivot, int value, int shift)
-	{
-		if (GUILayout.Toggle(bToggle, text, style) != bToggle)
+		if (GUILayout.Button("Change Pivot"))
 		{
-			//w.SetPivot(w, pivot, isHorizontal);
-			//w.pivot = 
-			l = false;
-			hc = false;
-			r = false;
-			
-			bToggle = !bToggle;
-			value = value << shift;
-
-			Debug.Log(style + " " + value);
+			Debug.Log(string.Format("h={0},v={1}", h, v));
+			int count = 0;
+			int value = h & v;
+			Debug.Log(value);
+			while (value != 1)
+			{
+				value = value >> 1;
+				count++;
+			}
+			Debug.Log(value + "  " + count);
+			Debug.Log(((UIWidget.Pivot)(count)).ToString());
 		}
 	}
 
+
+	private void Toggle(ref bool bToggle, bool isH, string text, string style, int shift)
+	{
+		if (GUILayout.Toggle(bToggle, text, style) != bToggle)
+		{
+			if (isH)
+			{
+				l = false;
+				hc = false;
+				r = false;
+				bToggle = !bToggle;
+				h = (short)(73 << shift); //73 = 0000000001001001
+			}
+			else
+			{
+				t = false;
+				vc = false;
+				b = false;
+				bToggle = !bToggle;
+				v = (short)(7 << shift); //7 = 0000000000000111
+			}
+		}
+	}
+	#endregion
+
+
 	private void ChangeEffect()
-    {
-        if (Selection.objects == null || Selection.objects.Length == 0) return;
-        Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
-        foreach (UILabel item in labels)
-        {
-            item.effectStyle = effect;
-            EditorUtility.SetDirty(item);
-        }
-    }
+	{
+		if (Selection.objects == null || Selection.objects.Length == 0) return;
+		Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
+		foreach (UILabel item in labels)
+		{
+			item.effectStyle = effect;
+			EditorUtility.SetDirty(item);
+		}
+	}
 
-    private void ChangeOverflow()
-    {
-        if (Selection.objects == null || Selection.objects.Length == 0) return;
-        Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
-        foreach (UILabel item in labels)
-        {
-            item.overflowMethod = ov;
-            EditorUtility.SetDirty(item);
-        }
-    }
+	private void ChangeOverflow()
+	{
+		if (Selection.objects == null || Selection.objects.Length == 0) return;
+		Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
+		foreach (UILabel item in labels)
+		{
+			item.overflowMethod = ov;
+			EditorUtility.SetDirty(item);
+		}
+	}
 
 
-    public static void ChangeSize()
-    {
-        if (Selection.objects == null || Selection.objects.Length == 0)
-            return;
-        Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
-        if (!toChangeFont)
-        {
-            EditorUtility.DisplayDialog("", "先选择字体", "好");
-            return;
-        }
-        foreach (UILabel item in labels)
-        {
-            UILabel label = (UILabel)item;
-            label.font = toChangeFont;
-            EditorUtility.SetDirty(label);
-        }
-    }
-    public static void ChangeColor()
-    {
-        if (Selection.objects == null || Selection.objects.Length == 0) return;
-        Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
-        foreach (UILabel item in labels)
-        {
-            //item.color = new Color(R / 255f, G / 255f, B / 255f);
-            item.color = color;
-            EditorUtility.SetDirty(item);
-        }
-    }
-    public static void ChangeEffectColor()
-    {
-        //获取所有UILabel组件  
-        if (Selection.objects == null || Selection.objects.Length == 0) return;
-        Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
-        foreach (UILabel item in labels)
-        {
-            //item.effectColor = new Color(R / 255f, G / 255f, B / 255f);
-            item.effectColor = effecfColor;
-            EditorUtility.SetDirty(item);
-        }
-        //如果是UGUI讲UILabel换成Text就可以  
-        //         Object[] labels = Selection.GetFiltered(typeof(Text), SelectionMode.Deep);
-        //         foreach (Object item in labels)
-        //         {
-        //             //如果是UGUI讲UILabel换成Text就可以  
-        //              Text label = (Text)item;
-        //             label.font = toChangeFont;
-        //             label.fontStyle = toChangeFontStyle;
-        //label.font = toChangeFont;（UGUI）  
-        //             Debug.Log(item.name + ":" + label.text);
-        //  
-        //            EditorUtility.SetDirty(item);//重要  
-    }
-    [MenuItem("Window/Change Font/EffectNone")]
-    public static void ChangeFontEffect()
-    {
-        if (Selection.objects == null || Selection.objects.Length == 0) return;
-        Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
-        foreach (UILabel item in labels)
-        {
-            item.effectStyle = UILabel.Effect.None;
-            EditorUtility.SetDirty(item);
-        }
-    }
-    [MenuItem("Window/Change Font/yellow")]
-    public static void ChangeYellow()
-    {
-        if (Selection.objects == null || Selection.objects.Length == 0) return;
-        Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
-        foreach (UILabel item in labels)
-        {
-            item.effectColor = new Color(128 / 255f, 75 / 255f, 0 / 255f);
-            EditorUtility.SetDirty(item);
-        }
-    }
-    [MenuItem("Window/Change Font/blue")]
-    public static void ChangeBlue()
-    {
-        if (Selection.objects == null || Selection.objects.Length == 0) return;
-        Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
-        foreach (UILabel item in labels)
-        {
-            item.effectColor = new Color(16 / 255f, 136 / 255f, 212 / 255f);
-            EditorUtility.SetDirty(item);
-        }
-    }
-    [MenuItem("Window/Change Sprite/blue")]
-    public static void ChangeSPBlue()
-    {
-        if (Selection.objects == null || Selection.objects.Length == 0) return;
-        Object[] labels = Selection.GetFiltered(typeof(UISprite), SelectionMode.Deep);
-        foreach (UISprite item in labels)
-        {
-            item.spriteName = "Btn3";
-            item.type = UISprite.Type.Simple;
-            item.MakePixelPerfect();
-        }
-    }
-    [MenuItem("Window/Change Sprite/yellow")]
-    public static void ChangeSPYellow()
-    {
-        if (Selection.objects == null || Selection.objects.Length == 0) return;
-        Object[] labels = Selection.GetFiltered(typeof(UISprite), SelectionMode.Deep);
-        foreach (UISprite item in labels)
-        {
-            item.spriteName = "BtnDown3";
-            item.type = UISprite.Type.Simple;
-            item.MakePixelPerfect();
-        }
-    }
-    public static void ChangeSP()
-    {
-        if (Selection.objects == null || Selection.objects.Length == 0) return;
-        Object[] labels = Selection.GetFiltered(typeof(UISprite), SelectionMode.Deep);
-        foreach (UISprite item in labels)
-        {
-            item.spriteName = SPName;
-            item.type = UISprite.Type.Simple;
-            item.MakePixelPerfect();
-        }
-    }
+	public static void ChangeSize()
+	{
+		if (Selection.objects == null || Selection.objects.Length == 0)
+			return;
+		Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
+		if (!toChangeFont)
+		{
+			EditorUtility.DisplayDialog("", "先选择字体", "好");
+			return;
+		}
+		foreach (UILabel item in labels)
+		{
+			UILabel label = (UILabel)item;
+			label.font = toChangeFont;
+			EditorUtility.SetDirty(label);
+		}
+	}
+	public static void ChangeColor()
+	{
+		if (Selection.objects == null || Selection.objects.Length == 0) return;
+		Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
+		foreach (UILabel item in labels)
+		{
+			//item.color = new Color(R / 255f, G / 255f, B / 255f);
+			item.color = color;
+			EditorUtility.SetDirty(item);
+		}
+	}
+	public static void ChangeEffectColor()
+	{
+		//获取所有UILabel组件  
+		if (Selection.objects == null || Selection.objects.Length == 0) return;
+		Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
+		foreach (UILabel item in labels)
+		{
+			//item.effectColor = new Color(R / 255f, G / 255f, B / 255f);
+			item.effectColor = effecfColor;
+			EditorUtility.SetDirty(item);
+		}
+		//如果是UGUI讲UILabel换成Text就可以  
+		//         Object[] labels = Selection.GetFiltered(typeof(Text), SelectionMode.Deep);
+		//         foreach (Object item in labels)
+		//         {
+		//             //如果是UGUI讲UILabel换成Text就可以  
+		//              Text label = (Text)item;
+		//             label.font = toChangeFont;
+		//             label.fontStyle = toChangeFontStyle;
+		//label.font = toChangeFont;（UGUI）  
+		//             Debug.Log(item.name + ":" + label.text);
+		//  
+		//            EditorUtility.SetDirty(item);//重要  
+	}
+	[MenuItem("Window/Change Font/EffectNone")]
+	public static void ChangeFontEffect()
+	{
+		if (Selection.objects == null || Selection.objects.Length == 0) return;
+		Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
+		foreach (UILabel item in labels)
+		{
+			item.effectStyle = UILabel.Effect.None;
+			EditorUtility.SetDirty(item);
+		}
+	}
+	[MenuItem("Window/Change Font/yellow")]
+	public static void ChangeYellow()
+	{
+		if (Selection.objects == null || Selection.objects.Length == 0) return;
+		Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
+		foreach (UILabel item in labels)
+		{
+			item.effectColor = new Color(128 / 255f, 75 / 255f, 0 / 255f);
+			EditorUtility.SetDirty(item);
+		}
+	}
+	[MenuItem("Window/Change Font/blue")]
+	public static void ChangeBlue()
+	{
+		if (Selection.objects == null || Selection.objects.Length == 0) return;
+		Object[] labels = Selection.GetFiltered(typeof(UILabel), SelectionMode.Deep);
+		foreach (UILabel item in labels)
+		{
+			item.effectColor = new Color(16 / 255f, 136 / 255f, 212 / 255f);
+			EditorUtility.SetDirty(item);
+		}
+	}
+	[MenuItem("Window/Change Sprite/blue")]
+	public static void ChangeSPBlue()
+	{
+		if (Selection.objects == null || Selection.objects.Length == 0) return;
+		Object[] labels = Selection.GetFiltered(typeof(UISprite), SelectionMode.Deep);
+		foreach (UISprite item in labels)
+		{
+			item.spriteName = "Btn3";
+			item.type = UISprite.Type.Simple;
+			item.MakePixelPerfect();
+		}
+	}
+	[MenuItem("Window/Change Sprite/yellow")]
+	public static void ChangeSPYellow()
+	{
+		if (Selection.objects == null || Selection.objects.Length == 0) return;
+		Object[] labels = Selection.GetFiltered(typeof(UISprite), SelectionMode.Deep);
+		foreach (UISprite item in labels)
+		{
+			item.spriteName = "BtnDown3";
+			item.type = UISprite.Type.Simple;
+			item.MakePixelPerfect();
+		}
+	}
+	public static void ChangeSP()
+	{
+		if (Selection.objects == null || Selection.objects.Length == 0) return;
+		Object[] labels = Selection.GetFiltered(typeof(UISprite), SelectionMode.Deep);
+		foreach (UISprite item in labels)
+		{
+			item.spriteName = SPName;
+			item.type = UISprite.Type.Simple;
+			item.MakePixelPerfect();
+		}
+	}
 }
