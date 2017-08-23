@@ -28,7 +28,7 @@ public class UIModifier : EditorWindow
 	static string SPName = "";
 
 
-	[MenuItem("Window/UIModifier/Label &l")]
+	[MenuItem("Window/UIModifier/Label")]
 	private static void ShowWindowSelectLabel()
 	{
 		m_ButtonSpriteSelected = false;
@@ -38,7 +38,7 @@ public class UIModifier : EditorWindow
 		m_UIModifier.Show();
 	}
 
-	[MenuItem("Window/UIModifier/Sprite &s")]
+	[MenuItem("Window/UIModifier/Sprite")]
 	private static void ShowWindowSelectSprite()
 	{
 		m_ButtonSpriteSelected = true;
