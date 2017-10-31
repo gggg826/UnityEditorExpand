@@ -27,6 +27,8 @@ public class UIButtonColor : UIWidgetContainer
 
 	public GameObject tweenTarget;
 
+	public bool EnableColor;
+
 	/// <summary>
 	/// Color to apply on hover event (mouse only).
 	/// </summary>
@@ -300,6 +302,9 @@ public class UIButtonColor : UIWidgetContainer
 
 	public void UpdateColor (bool instant)
 	{
+		if (!EnableColor)
+			return;
+
 		TweenColor tc;
 
 		if (tweenTarget != null)

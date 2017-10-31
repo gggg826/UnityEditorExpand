@@ -1030,7 +1030,7 @@ public class UIWidgetInspector : UIRectEditor
 	/// Draw widget's depth.
 	/// </summary>
 
-	public static void DrawDepth (SerializedObject so, UIWidget w, bool isPrefab)
+	static void DrawDepth (SerializedObject so, UIWidget w, bool isPrefab)
 	{
 		if (isPrefab) return;
 
@@ -1085,7 +1085,7 @@ public class UIWidgetInspector : UIRectEditor
 	/// Draw the widget's pivot.
 	/// </summary>
 
-	public static void DrawPivot (SerializedObject so, UIWidget w)
+	static void DrawPivot (SerializedObject so, UIWidget w)
 	{
 		SerializedProperty pv = so.FindProperty("mPivot");
 
@@ -1115,7 +1115,7 @@ public class UIWidgetInspector : UIRectEditor
 	/// Draw a toggle button for the pivot point.
 	/// </summary>
 
-	public static void Toggle (UIWidget w, string text, string style, UIWidget.Pivot pivot, bool isHorizontal)
+	static void Toggle (UIWidget w, string text, string style, UIWidget.Pivot pivot, bool isHorizontal)
 	{
 		bool isActive = false;
 

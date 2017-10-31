@@ -1309,7 +1309,7 @@ static public class NGUIEditorTools
 		bool state = EditorPrefs.GetBool(key, true);
 
 		if (!minimalistic) GUILayout.Space(3f);
-		if (!forceOn && !state) GUI.backgroundColor = new Color(0f, 0f, 0f);
+		if (!forceOn && !state) GUI.backgroundColor = new Color(0.8f, 0.8f, 0.8f);
 		GUILayout.BeginHorizontal();
 		GUI.changed = false;
 
