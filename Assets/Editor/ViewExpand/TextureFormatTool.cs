@@ -231,6 +231,13 @@ public class TextureFormatTool : EditorWindow
 				m_sRGBTexture = true;
 				m_MipmapEnabled = false;
 				m_NPOTS = TextureImporterNPOTScale.None;
+				if(m_PlatformOverrideContence != null)
+				{
+					foreach (var item in m_PlatformOverrideContence)
+					{
+						item.Value.MaxSize = -1;
+					}
+				}
 				break;
 
 			case "Charactor":
@@ -238,6 +245,13 @@ public class TextureFormatTool : EditorWindow
 				m_sRGBTexture = true;
 				m_MipmapEnabled = true;
 				m_NPOTS = TextureImporterNPOTScale.ToNearest;
+				if (m_PlatformOverrideContence != null)
+				{
+					foreach (var item in m_PlatformOverrideContence)
+					{
+						item.Value.MaxSize = 512;
+					}
+				}
 				break;
 
 			case "OtherModel":
@@ -245,6 +259,13 @@ public class TextureFormatTool : EditorWindow
 				m_sRGBTexture = true;
 				m_MipmapEnabled = true;
 				m_NPOTS = TextureImporterNPOTScale.ToNearest;
+				if (m_PlatformOverrideContence != null)
+				{
+					foreach (var item in m_PlatformOverrideContence)
+					{
+						item.Value.MaxSize = 512;
+					}
+				}
 				break;
 
 			default:
@@ -310,10 +331,17 @@ public class TextureFormatTool : EditorWindow
 		{
 			string path = AssetDatabase.GetAssetPath(texture);
 			TextureImporter textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
-			textureImporter.isReadable = false;
-			textureImporter.sRGBTexture = true;
-			textureImporter.mipmapEnabled = false;
+			textureImporter.isReadable = m_Readable;
+			textureImporter.sRGBTexture = m_sRGBTexture;
+			textureImporter.mipmapEnabled = m_MipmapEnabled;
 
+			if(m_PlatformOverrideContence != null)
+			{
+				foreach (var item in m_PlatformOverrideContence)
+				{
+					PlatformTextureSetting(textureImporter, item.Key);
+				}
+			}
 
 			textureImporter.SaveAndReimport();
 		}
@@ -341,7 +369,7 @@ public class TextureFormatTool : EditorWindow
 		{
 			sourcePlatformImporterSettings.maxTextureSize = GetLowLevelSize(textureImporter.maxTextureSize, targetPlatformFomat.MaxSize);
 		}
-		else if(targetPlatformFomat.MaxSize == -1)
+		else if(targetPlatformFomat.MaxSize != -1)
 		{
 			sourcePlatformImporterSettings.maxTextureSize = targetPlatformFomat.MaxSize;
 		}
