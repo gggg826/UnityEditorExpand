@@ -28,7 +28,7 @@ using UnityEngine;
 
 public class OverrideContence
 {
-	public BuildTarget TargetPlatform;
+	public string TargetPlatform;
 	public GUIContent OverrideContent;
 	public bool IsOverride;
 
@@ -37,7 +37,7 @@ public class OverrideContence
 	public TextureImporterFormat DefaultFormat;
 	public TextureImporterFormat NormalFormat;
 
-	public OverrideContence(BuildTarget target, string tip, TextureImporterFormat defalutFormat, TextureImporterFormat normalFormat, bool isOverride = true)
+	public OverrideContence(string target, string tip, TextureImporterFormat defalutFormat, TextureImporterFormat normalFormat, bool isOverride = true)
 	{
 		TargetPlatform = target;
 		OverrideContent = EditorGUIUtility.IconContent(GetPlatformSmallIcon(TargetPlatform), tip);
@@ -48,21 +48,22 @@ public class OverrideContence
 		IsOverride = isOverride;
 	}
 
-	public static string GetPlatformSmallIcon(BuildTarget targetPlatform)
+	public static string GetPlatformSmallIcon(string targetPlatform)
 	{
 		switch (targetPlatform)
 		{
-			case BuildTarget.StandaloneLinux:
-			case BuildTarget.StandaloneLinux64:
-			case BuildTarget.StandaloneLinuxUniversal:
-			case BuildTarget.StandaloneOSXIntel:
-			case BuildTarget.StandaloneOSXIntel64:
-			case BuildTarget.StandaloneOSXUniversal:
-			case BuildTarget.StandaloneWindows:
-			case BuildTarget.StandaloneWindows64:
-				return "BuildSettings.Standalone.Small";
+			//case BuildTarget.StandaloneLinux:
+			//case BuildTarget.StandaloneLinux64:
+			//case BuildTarget.StandaloneLinuxUniversal:
+			//case BuildTarget.StandaloneOSXIntel:
+			//case BuildTarget.StandaloneOSXIntel64:
+			//case BuildTarget.StandaloneOSXUniversal:
+			//case BuildTarget.StandaloneWindows:
+			//case BuildTarget.StandaloneWindows64:
+			//	return "BuildSettings.Standalone.Small";
 
-			case BuildTarget.iOS:
+			case "iPhone":
+			case "iOS":
 				return "BuildSettings.iPhone.Small";
 
 			default:
@@ -298,8 +299,11 @@ public class TextureFormatTool : EditorWindow
 		{
 			m_PlatformOverrideContence.Clear();
 		}
-		m_PlatformOverrideContence.Add(BuildTarget.Android.ToString(), new OverrideContence(BuildTarget.Android, "Android", TextureImporterFormat.ETC2_RGBA8, TextureImporterFormat.ETC2_RGB4_PUNCHTHROUGH_ALPHA));
-		m_PlatformOverrideContence.Add(BuildTarget.iOS.ToString(), new OverrideContence(BuildTarget.iOS, "iOS", TextureImporterFormat.PVRTC_RGBA4, TextureImporterFormat.PVRTC_RGB4));
+		m_PlatformOverrideContence.Add(/*BuildTarget.Android.ToString()*/"Standalone", new OverrideContence("Standalone", "Standalone", TextureImporterFormat.DXT5Crunched, TextureImporterFormat.DXT5, false));
+		m_PlatformOverrideContence.Add(/*BuildTarget.Android.ToString()*/"Android", new OverrideContence("Android", "Android", TextureImporterFormat.ETC2_RGBA8, TextureImporterFormat.ETC2_RGBA8));
+		// 按官方文档解释来说，应该用iOS，然鹅Inspector面板显示iOS的压缩参数是读取YAML中"iPhone"项，为了安全，"iPhone" "iOS"项都进行修改 [10:50  1/3/2018  BingLau]
+		m_PlatformOverrideContence.Add(/*BuildTarget.iOS.ToString()*/"iPhone", new OverrideContence("iPhone", "iPhone", TextureImporterFormat.PVRTC_RGBA4, TextureImporterFormat.PVRTC_RGB4));
+		m_PlatformOverrideContence.Add(/*BuildTarget.iOS.ToString()*/"iOS", new OverrideContence("iOS", "iOS", TextureImporterFormat.PVRTC_RGBA4, TextureImporterFormat.PVRTC_RGB4));
 		m_CurrentSelectPlatform = BuildTarget.Android.ToString();
 	}
 
