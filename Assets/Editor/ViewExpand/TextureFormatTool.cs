@@ -26,55 +26,10 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-public class OverrideContence
-{
-	public string TargetPlatform;
-	public GUIContent OverrideContent;
-	public bool IsOverride;
-
-	public int MaxSize;
-
-	public TextureImporterFormat DefaultFormat;
-	public TextureImporterFormat NormalFormat;
-
-	public OverrideContence(string target, string tip, TextureImporterFormat defalutFormat, TextureImporterFormat normalFormat, bool isOverride = true)
-	{
-		TargetPlatform = target;
-		OverrideContent = EditorGUIUtility.IconContent(GetPlatformSmallIcon(TargetPlatform), tip);
-		DefaultFormat = defalutFormat;
-		NormalFormat = normalFormat;
-
-		MaxSize = 512;
-		IsOverride = isOverride;
-	}
-
-	public static string GetPlatformSmallIcon(string targetPlatform)
-	{
-		switch (targetPlatform)
-		{
-			//case BuildTarget.StandaloneLinux:
-			//case BuildTarget.StandaloneLinux64:
-			//case BuildTarget.StandaloneLinuxUniversal:
-			//case BuildTarget.StandaloneOSXIntel:
-			//case BuildTarget.StandaloneOSXIntel64:
-			//case BuildTarget.StandaloneOSXUniversal:
-			//case BuildTarget.StandaloneWindows:
-			//case BuildTarget.StandaloneWindows64:
-			//	return "BuildSettings.Standalone.Small";
-
-			case "iPhone":
-			case "iOS":
-				return "BuildSettings.iPhone.Small";
-
-			default:
-				return string.Format("BuildSettings.{0}.Small", targetPlatform.ToString());
-		}
-	}
-}
 
 public class TextureFormatTool : EditorWindow
 {
-	protected static readonly string[] MAXTEXTURESIZESTRINGS = new string[]
+	public static readonly string[] MAXTEXTURESIZESTRINGS = new string[]
 		{
 			"Don't Change",
 			"Onece Low Level",
@@ -91,33 +46,10 @@ public class TextureFormatTool : EditorWindow
 			"8192"
 		};
 
-	protected static readonly int[] MAXTEXTURESIZEVALUES = new int[]
-	{
-			-1,
-			1,
-			2,
-			3,
-			32,
-			64,
-			128,
-			256,
-			512,
-			1024,
-			2048,
-			4096,
-			8192
-	};
+	protected TextureFormatData m_FormatData;
 
-	protected TextureImporterFormat m_Textureforamt;
-	protected TextureImporterNPOTScale m_NPOTS;
-	protected bool m_Readable;
-	protected bool m_sRGBTexture;
-	protected bool m_MipmapEnabled;
-	private List<string> m_QuickSetButtions;
-	private string m_CurrentSelectedQuickSet;
+	public string CurrentSelectPlatform;
 
-	protected Dictionary<string, OverrideContence> m_PlatformOverrideContence;
-	protected string m_CurrentSelectPlatform;
 
 	[MenuItem("Window/Texture Format", false)]
 	public static void OpenTextureFormatTool()
@@ -129,9 +61,15 @@ public class TextureFormatTool : EditorWindow
 
 	protected void OnGUI()
 	{
-		if (m_CurrentSelectedQuickSet == null)
+		if(m_FormatData == null)
 		{
-			Initialize();
+			m_FormatData = new TextureFormatData();
+			m_FormatData.Initialize();
+		}
+
+		if (string.IsNullOrEmpty(CurrentSelectPlatform))
+		{
+			CurrentSelectPlatform = BuildTarget.Android.ToString();
 		}
 		GUILayout.Space(20);
 		DrawQuickButton();
@@ -144,7 +82,7 @@ public class TextureFormatTool : EditorWindow
 		GUI.color = Color.cyan;
 		if (GUILayout.Button("GO", GUILayout.MinHeight(20)))
 		{
-			ChangeSelectedTextureFormatSettings();
+			m_FormatData.ChangeSelectedTextureFormatSettings(GetSelectedTextures(), m_FormatData.TargetImporterData);
 		}
 		GUI.color = temp;
 	}
@@ -155,18 +93,19 @@ public class TextureFormatTool : EditorWindow
 		GUILayout.Space(10);
 		EditorGUILayout.BeginVertical();
 
-		string newQuickButton = CustomEditorUtils.DrawHeaderButtons(m_QuickSetButtions.ToArray(), 10, m_CurrentSelectedQuickSet, 20);
-		if (newQuickButton != m_CurrentSelectedQuickSet)
+		string newQuickButton = CustomEditorUtils.DrawHeaderButtons(m_FormatData.QuickSetResolutions.ToArray(), 10, m_FormatData.CurrentSelectedQuickSetResolution, 20);
+		if (newQuickButton != m_FormatData.CurrentSelectedQuickSetResolution)
 		{
-			m_CurrentSelectedQuickSet = newQuickButton;
-			OnQuickButtonChanged();
+			m_FormatData.CurrentSelectedQuickSetResolution = newQuickButton;
+			m_FormatData.OnQuickButtonChanged();
 		}
 		GUILayout.Space(10);
 
 		EditorGUILayout.BeginVertical(GUI.skin.box, new GUILayoutOption[0]);
-		m_Readable = EditorGUILayout.ToggleLeft("Read/Write", m_Readable, new GUILayoutOption[0]);
-		m_sRGBTexture = EditorGUILayout.ToggleLeft("sRGBTexture", m_sRGBTexture, new GUILayoutOption[0]);
-		m_MipmapEnabled = EditorGUILayout.ToggleLeft("Mipmap", m_MipmapEnabled, new GUILayoutOption[0]);
+		m_FormatData.TargetImporterData.Readable = EditorGUILayout.ToggleLeft("Read/Write", m_FormatData.TargetImporterData.Readable, new GUILayoutOption[0]);
+		m_FormatData.TargetImporterData.sRGBTexture = EditorGUILayout.ToggleLeft("sRGBTexture", m_FormatData.TargetImporterData.sRGBTexture, new GUILayoutOption[0]);
+		m_FormatData.TargetImporterData.MipmapEnabled = EditorGUILayout.ToggleLeft("Mipmap", m_FormatData.TargetImporterData.MipmapEnabled, new GUILayoutOption[0]);
+		m_FormatData.TargetImporterData.aTranparency = EditorGUILayout.ToggleLeft("a is Transparency", m_FormatData.TargetImporterData.aTranparency, new GUILayoutOption[0]);
 		EditorGUILayout.EndVertical();
 		EditorGUILayout.EndVertical();
 
@@ -186,22 +125,22 @@ public class TextureFormatTool : EditorWindow
 		GUIStyle toolbarButton = EditorStyles.toolbarButton;
 
 		int platformIndex = 0;
-		int platformCount = m_PlatformOverrideContence.Count;
-		foreach (var item in m_PlatformOverrideContence)
+		int platformCount = m_FormatData.TargetImporterData.PlatformOverrideContences.Count;
+		foreach (var item in m_FormatData.TargetImporterData.PlatformOverrideContences)
 		{
 			Rect position;
 			int startX = Mathf.RoundToInt((float)platformIndex * rect.width / (float)platformCount);
 			int endX = Mathf.RoundToInt((float)(platformIndex + 1) * rect.width / (float)platformCount);
 			position = new Rect(rect.x + (float)startX, rect.y, (float)(endX - startX), (float)height);
-			if (GUI.Toggle(position, m_CurrentSelectPlatform == item.Key, item.Value.OverrideContent, toolbarButton))
+			if (GUI.Toggle(position, CurrentSelectPlatform == item.Key, item.Value.OverrideContent, toolbarButton))
 			{
-				m_CurrentSelectPlatform = item.Key;
+				CurrentSelectPlatform = item.Key;
 			}
 			platformIndex++;
 		}
 
 		GUILayoutUtility.GetRect(10f, (float)height);
-		OverrideContence current = m_PlatformOverrideContence[m_CurrentSelectPlatform];
+		PlatformOverrideContence current = m_FormatData.TargetImporterData.PlatformOverrideContences[CurrentSelectPlatform];
 		string label = "Override for " + current.TargetPlatform;
 		bool isOverride = EditorGUILayout.ToggleLeft(label, current.IsOverride, new GUILayoutOption[0]);
 		if (isOverride != current.IsOverride)
@@ -210,7 +149,7 @@ public class TextureFormatTool : EditorWindow
 		}
 
 		EditorGUILayout.HelpBox("如果当前MaxSize为倍率压缩时，NormalMap不受影响(不改变)", MessageType.Info);
-		current.MaxSize = EditorGUILayout.IntPopup("Max Size", current.MaxSize, MAXTEXTURESIZESTRINGS, MAXTEXTURESIZEVALUES, new GUILayoutOption[0]);
+		current.MaxSize = EditorGUILayout.IntPopup("Max Size", current.MaxSize, MAXTEXTURESIZESTRINGS, TextureFormatData.MAXTEXTURESIZEVALUES, new GUILayoutOption[0]);
 		current.DefaultFormat = (TextureImporterFormat)EditorGUILayout.EnumPopup("Default Format", current.DefaultFormat, new GUILayoutOption[0]);
 		current.NormalFormat = (TextureImporterFormat)EditorGUILayout.EnumPopup("Normal Format", current.NormalFormat, new GUILayoutOption[0]);
 		EditorGUILayout.EndVertical();
@@ -218,203 +157,10 @@ public class TextureFormatTool : EditorWindow
 		GUILayout.Space(10);
 		EditorGUILayout.EndHorizontal();
 	}
-
-	protected void OnQuickButtonChanged()
-	{
-		if (string.IsNullOrEmpty(m_CurrentSelectedQuickSet))
-		{
-			m_CurrentSelectedQuickSet = "Charactor";
-		}
-		switch (m_CurrentSelectedQuickSet)
-		{
-			case "UIAtlas":
-				m_Readable = false;
-				m_sRGBTexture = true;
-				m_MipmapEnabled = false;
-				m_NPOTS = TextureImporterNPOTScale.None;
-				if(m_PlatformOverrideContence != null)
-				{
-					foreach (var item in m_PlatformOverrideContence)
-					{
-						item.Value.MaxSize = -1;
-					}
-				}
-				break;
-
-			case "Charactor":
-				m_Readable = false;
-				m_sRGBTexture = true;
-				m_MipmapEnabled = true;
-				m_NPOTS = TextureImporterNPOTScale.ToNearest;
-				if (m_PlatformOverrideContence != null)
-				{
-					foreach (var item in m_PlatformOverrideContence)
-					{
-						item.Value.MaxSize = 512;
-					}
-				}
-				break;
-
-			case "OtherModel":
-				m_Readable = false;
-				m_sRGBTexture = true;
-				m_MipmapEnabled = true;
-				m_NPOTS = TextureImporterNPOTScale.ToNearest;
-				if (m_PlatformOverrideContence != null)
-				{
-					foreach (var item in m_PlatformOverrideContence)
-					{
-						item.Value.MaxSize = 512;
-					}
-				}
-				break;
-
-			default:
-				break;
-		}
-	}
-
-	protected void Initialize()
-	{
-		if (m_QuickSetButtions == null)
-		{
-			m_QuickSetButtions = new List<string>();
-		}
-		else
-		{
-			m_QuickSetButtions.Clear();
-		}
-
-		m_QuickSetButtions.Add("UIAtlas");
-		m_QuickSetButtions.Add("Charactor");
-		m_QuickSetButtions.Add("OtherModel");
-		m_CurrentSelectedQuickSet = "Charactor";
-		OnQuickButtonChanged();
-
-		if (m_PlatformOverrideContence == null)
-		{
-			m_PlatformOverrideContence = new Dictionary<string, OverrideContence>();
-		}
-		else
-		{
-			m_PlatformOverrideContence.Clear();
-		}
-		m_PlatformOverrideContence.Add(/*BuildTarget.Android.ToString()*/"Standalone", new OverrideContence("Standalone", "Standalone", TextureImporterFormat.DXT5Crunched, TextureImporterFormat.DXT5, false));
-		m_PlatformOverrideContence.Add(/*BuildTarget.Android.ToString()*/"Android", new OverrideContence("Android", "Android", TextureImporterFormat.ETC2_RGBA8, TextureImporterFormat.ETC2_RGBA8));
-		// 按官方文档解释来说，应该用iOS，然鹅Inspector面板显示iOS的压缩参数是读取YAML中"iPhone"项，为了安全，"iPhone" "iOS"项都进行修改 [10:50  1/3/2018  BingLau]
-		m_PlatformOverrideContence.Add(/*BuildTarget.iOS.ToString()*/"iPhone", new OverrideContence("iPhone", "iPhone", TextureImporterFormat.PVRTC_RGBA4, TextureImporterFormat.PVRTC_RGB4));
-		m_PlatformOverrideContence.Add(/*BuildTarget.iOS.ToString()*/"iOS", new OverrideContence("iOS", "iOS", TextureImporterFormat.PVRTC_RGBA4, TextureImporterFormat.PVRTC_RGB4));
-		m_CurrentSelectPlatform = BuildTarget.Android.ToString();
-	}
-
 	#endregion GUI
-
-	#region Fuctions
-	protected void ChangeSelectedTextureFormatSettings()
-	{
-		Object[] textures = GetSelectedTextures();
-
-		Selection.objects = new Object[0];
-		foreach (Texture2D texture in textures)
-		{
-			if(!ChangeTextureFormatSettings(texture))
-			{
-				continue;
-			}
-		}
-	}
-
-	protected bool ChangeTextureFormatSettings(Texture2D texture)
-	{
-		if(!texture)
-		{
-			return false;
-		}
-
-		try
-		{
-			string path = AssetDatabase.GetAssetPath(texture);
-			TextureImporter textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
-			textureImporter.isReadable = m_Readable;
-			textureImporter.sRGBTexture = m_sRGBTexture;
-			textureImporter.mipmapEnabled = m_MipmapEnabled;
-
-			if(m_PlatformOverrideContence != null)
-			{
-				foreach (var item in m_PlatformOverrideContence)
-				{
-					PlatformTextureSetting(textureImporter, item.Key);
-				}
-			}
-
-			textureImporter.SaveAndReimport();
-		}
-		catch (System.Exception ex)
-		{
-			Debug.LogError(ex.Message);
-			return false;
-		}
-		return true;
-	}
-
-	protected void PlatformTextureSetting(TextureImporter textureImporter, string platfrom)
-	{
-		if(m_PlatformOverrideContence == null || !m_PlatformOverrideContence.ContainsKey(platfrom))
-		{
-			return;
-		}
-
-		OverrideContence targetPlatformFomat = m_PlatformOverrideContence[platfrom];
-		TextureImporterPlatformSettings sourcePlatformImporterSettings = textureImporter.GetPlatformTextureSettings(platfrom);
-
-		sourcePlatformImporterSettings.overridden = targetPlatformFomat.IsOverride;
-
-		if (targetPlatformFomat.MaxSize <= 3 && targetPlatformFomat.MaxSize != -1)
-		{
-			sourcePlatformImporterSettings.maxTextureSize = GetLowLevelSize(textureImporter.maxTextureSize, targetPlatformFomat.MaxSize);
-		}
-		else if(targetPlatformFomat.MaxSize != -1)
-		{
-			sourcePlatformImporterSettings.maxTextureSize = targetPlatformFomat.MaxSize;
-		}
-		
-		if (textureImporter.textureType == TextureImporterType.Default)
-		{
-			sourcePlatformImporterSettings.format = targetPlatformFomat.DefaultFormat;
-			textureImporter.SetPlatformTextureSettings(sourcePlatformImporterSettings);
-		}
-		else if (textureImporter.textureType == TextureImporterType.NormalMap)
-		{
-			sourcePlatformImporterSettings.format = targetPlatformFomat.NormalFormat;
-			textureImporter.SetPlatformTextureSettings(sourcePlatformImporterSettings);
-		}
-	}
-
+	
 	protected static Object[] GetSelectedTextures()
 	{
 		return Selection.GetFiltered(typeof(Texture2D), SelectionMode.DeepAssets);
 	}
-
-	protected int GetLowLevelSize(float size, int times)
-	{
-		int index = MAXTEXTURESIZEVALUES[MAXTEXTURESIZEVALUES.Length -1];
-		for (int i = 0; i < MAXTEXTURESIZEVALUES.Length; i++)
-		{
-			if(size == MAXTEXTURESIZEVALUES[i])
-			{
-				index = i;
-				break;
-			}
-		}
-
-		index -= times;
-		if(index < 4)
-		{
-			index = 4;
-		}
-
-		return MAXTEXTURESIZEVALUES[index];
-	}
-
-	#endregion Fuctions
 }
